@@ -84,20 +84,20 @@ const App: React.FC = () => {
           lines.push(text.slice(i, i + maxTextLen));
         }
         // テキストの描画サイズを計算（全文を表示できるように）
-        const textWidth = lines.length * fontSize; // 縦書きなので幅は行数×フォントサイズ
+        const textWidth = lines.length * fontSize * 1.2; // 縦書きなので幅は行数×フォントサイズ（余裕を持たせる）
         const textHeight = Math.max(maxTextLen * fontSize, text.length * fontSize); // 全文の高さを確保
-        // 配置範囲を親要素内に制限
+        // 配置範囲を親要素内に制限（リセットボタンとの重なりを避ける）
         const minX = 0;
-        const maxX = Math.max(0, containerSize.width - textWidth);
-        const minY = 0;
-        const maxY = Math.max(0, containerSize.height - textHeight);
+        const maxX = Math.max(0, containerSize.width - textWidth - 40); // 右端に余裕を持たせる
+        const minY = 80; // リセットボタンの下に配置するため上部に余裕を持たせる
+        const maxY = Math.max(minY, containerSize.height - textHeight - 40); // 下部にも余裕を持たせる
         let x = 0, y = 0, tryCount = 0, overlap = false;
         do {
           x = getRandomInt(minX, maxX);
           y = getRandomInt(minY, maxY);
           overlap = prev.some(ft => {
             // テキストの矩形同士が重なっているか
-            const ftWidth = (ft.text.length / maxTextLen) * ft.fontSize || ft.fontSize;
+            const ftWidth = (ft.text.length / maxTextLen) * ft.fontSize * 1.2 || ft.fontSize * 1.2;
             const ftHeight = Math.min(maxTextLen, ft.text.length) * ft.fontSize;
             return (
               x < ft.x + ftWidth &&
@@ -190,7 +190,6 @@ const App: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', position: 'relative', overflow: 'auto' }}>
-      <div className="taisho-title">短文作成メーカー </div>
       <button className="taisho-btn taisho-reset" style={{ position: 'fixed', top: 24, right: 32, zIndex: 100 }} onClick={handleReset}>リセット</button>
       <div style={{ display: 'flex', flexDirection: 'row', width: '100vw', maxWidth: 1200, margin: '0 auto', minHeight: '80vh', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
         {/* 左側：原稿用紙 */}
@@ -254,7 +253,7 @@ const App: React.FC = () => {
           </svg>
         </div>
         {/* 右側：浮遊テキスト（重なり防止・折り返し対応） */}
-        <div ref={containerRef} style={{ position: 'relative', width: '50%', minWidth: 320, height: '80vh', minHeight: 400, overflow: 'hidden', background: 'none' }}>
+        <div ref={containerRef} style={{ position: 'relative', width: '50%', minWidth: 320, height: '80vh', minHeight: 400, overflow: 'visible', background: 'none', paddingTop: '80px', paddingRight: '40px', paddingBottom: '40px', paddingLeft: '10px' }}>
           {floatingTexts.filter(t => !t.selected).map((t) => {
             // 折り返し処理（全文表示を保証）
             const fontSize = t.fontSize;
@@ -283,7 +282,9 @@ const App: React.FC = () => {
                   whiteSpace: 'pre-wrap',
                   minHeight: 'auto', // 最小高さを自動に
                   overflow: 'visible', // オーバーフローを表示
-                  maxWidth: 50 * lines.length, // 幅を少し広く
+                  maxWidth: 60 * lines.length, // 幅をさらに広く
+                  width: 'auto', // 幅を自動調整
+                  height: 'auto', // 高さを自動調整
                   wordBreak: 'break-all',
                   pointerEvents: t.selected ? 'none' : 'auto',
                   display: 'flex',

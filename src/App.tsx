@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import './App.css';
 
 // ランダムに表示されるテキスト候補
@@ -49,6 +49,7 @@ const App: React.FC = () => {
   const [genkou, setGenkou] = useState<string[][]>(Array(GENKOU_COLS).fill('').map(() => Array(GENKOU_ROWS).fill('')));
   const [kutenMap, setKutenMap] = useState<{ col: number; row: number; char: string }[]>([]); // 句読点の位置管理
   const [nextCell, setNextCell] = useState<{ col: number; row: number }>({ col: GENKOU_COLS - 1, row: 0 });
+  const [hoveredText, setHoveredText] = useState<FloatingText | null>(null); // ホバー中のテキスト
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
 
@@ -141,9 +142,13 @@ const App: React.FC = () => {
         const newId = idRef.current++;
         timers.push(setTimeout(() => {
           setFloatingTexts((prev2) => prev2.map((ft) => ft.id === newId ? { ...ft, visible: false } : ft));
+          // テキストが非表示になる時にホバー状態もクリア
+          setHoveredText((current) => current?.id === newId ? null : current);
         }, lifetime));
         timers.push(setTimeout(() => {
           setFloatingTexts((prev2) => prev2.filter((ft) => ft.id !== newId));
+          // テキストが削除される時にもホバー状態をクリア
+          setHoveredText((current) => current?.id === newId ? null : current);
         }, lifetime + 700));
         return [
           ...prev,
@@ -168,6 +173,10 @@ const App: React.FC = () => {
   // テキストクリック時、原稿用紙に転記（句読点は一個前の文字の右下に配置）
   const handleTextClick = (t: FloatingText) => {
     if (t.selected) return;
+    
+    // クリックされたテキストがホバー中の場合、ホバー状態をクリア
+    setHoveredText((current) => current?.id === t.id ? null : current);
+    
     setGenkou((prev) => {
       const newGenkou = prev.map((col) => [...col]);
       let { col, row } = nextCell;
@@ -215,9 +224,55 @@ const App: React.FC = () => {
     setNextCell({ col: GENKOU_COLS - 1, row: 0 });
     setSelectedTextIds(new Set());
     setKutenMap([]);
+    setHoveredText(null);
     // 浮遊テキストもリセット時にクリア
     setFloatingTexts([]);
   };
+
+  // ホバー時のプレビュー計算（メモ化）
+  const getPreviewData = useCallback((text: FloatingText) => {
+    const { col, row } = nextCell;
+    const previewGenkou: string[][] = Array(GENKOU_COLS).fill('').map(() => Array(GENKOU_ROWS).fill(''));
+    const previewKuten: { col: number; row: number; char: string }[] = [];
+    
+    let currentCol = col;
+    let currentRow = row;
+    
+    for (let i = 0; i < text.text.length; i++) {
+      if (currentRow >= GENKOU_ROWS) {
+        currentCol--;
+        currentRow = 0;
+      }
+      if (currentCol < 0) break;
+      
+      if (isKutenOrTouten(text.text[i])) {
+        previewKuten.push({ col: currentCol, row: currentRow, char: text.text[i] });
+        currentRow++;
+      } else {
+        previewGenkou[currentCol][currentRow] = text.text[i];
+        currentRow++;
+      }
+    }
+    
+    return { previewGenkou, previewKuten };
+  }, [nextCell]);
+
+  // プレビューデータをメモ化
+  const previewData = useMemo(() => {
+    if (!hoveredText) return null;
+    return getPreviewData(hoveredText);
+  }, [hoveredText, getPreviewData]);
+
+  // ホバーハンドラーの最適化
+  const handleMouseEnter = useCallback((text: FloatingText) => {
+    // 見えないテキストや選択済みテキストはホバー対象外
+    if (!text.visible || text.selected) return;
+    setHoveredText(text);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredText(null);
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', position: 'relative', overflow: 'auto' }}>
@@ -271,6 +326,46 @@ const App: React.FC = () => {
                 );
               })
             ))}
+            
+            {/* ホバー時のプレビュー文字（薄く表示） */}
+            {previewData && (
+              <>
+                {previewData.previewGenkou.map((col, c) =>
+                  col.map((ch, r) =>
+                    ch ? (
+                      <text
+                        key={`preview-t${c}-${r}`}
+                        x={c * (30 + 6) + 15}
+                        y={r * 30 + 20}
+                        fontSize={20}
+                        textAnchor="middle"
+                        fill="#a85c2c"
+                        opacity="0.3"
+                        style={{ fontFamily: 'Yu Mincho, serif', writingMode: 'vertical-rl', textOrientation: 'upright' }}
+                      >
+                        {ch}
+                      </text>
+                    ) : null
+                  )
+                )}
+                {/* プレビューの句読点（薄く表示） */}
+                {previewData.previewKuten.map(({ col, row, char }, idx) => (
+                  <text
+                    key={`preview-kuten-${col}-${row}-${idx}`}
+                    x={getKutenPosition(col, row).x}
+                    y={getKutenPosition(col, row).y}
+                    fontSize={16}
+                    textAnchor="middle"
+                    fill="#a85c2c"
+                    opacity="0.3"
+                    style={{ fontFamily: 'Yu Mincho, serif', writingMode: 'vertical-rl', textOrientation: 'upright' }}
+                  >
+                    {char}
+                  </text>
+                ))}
+              </>
+            )}
+            
             {/* 文字（縦書き・右上から） */}
             {genkou.map((col, c) =>
               col.map((ch, r) =>
@@ -347,14 +442,17 @@ const App: React.FC = () => {
                   width: 'auto',
                   height: 'auto',
                   wordBreak: 'keep-all', // 単語の途中で改行しない
-                  pointerEvents: t.selected ? 'none' : 'auto',
+                  pointerEvents: (t.selected || !t.visible) ? 'none' : 'auto',
                   display: 'flex',
                   flexDirection: 'row', // 縦書きのため横方向に並べる
                   alignItems: 'flex-start',
                   justifyContent: 'flex-start',
                   gap: '0px', // 行間を詰める
+                  cursor: 'pointer', // マウスカーソルをポインターに
                 }}
                 onClick={() => handleTextClick(t)}
+                onMouseEnter={() => handleMouseEnter(t)}
+                onMouseLeave={handleMouseLeave}
               >
                 {lines.map((line, idx) => (
                   <span key={idx} style={{ display: 'inline-block' }}>{line}</span>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import './App.css';
 
 const TEXT_CANDIDATES = [
@@ -279,6 +280,42 @@ const App: React.FC = () => {
         リセット
       </button>
       
+      <Link 
+        to="/about"
+        style={{ 
+          position: 'fixed', 
+          top: 24, 
+          left: 32, 
+          zIndex: 100,
+          textDecoration: 'none'
+        }}
+      >
+        <button 
+          style={{
+            backgroundColor: '#8b7355',
+            color: 'white',
+            border: '2px solid #6b5b4f',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#6b5b4f';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#8b7355';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          このサイトについて
+        </button>
+      </Link>
+      
       <div style={{ 
         display: 'flex', 
         flexDirection: 'row', 
@@ -338,7 +375,7 @@ const App: React.FC = () => {
           <svg 
             width="100%" 
             height={GENKOU_ROWS * 30} 
-            viewBox={`0 0 ${(GENKOU_COLS * 30) + ((GENKOU_COLS - 1) * 6)} ${GENKOU_ROWS * 30}`} 
+            viewBox={'0 0 ' + ((GENKOU_COLS * 30) + ((GENKOU_COLS - 1) * 6)) + ' ' + (GENKOU_ROWS * 30)} 
             style={{ width: '100%', height: '100%', background: 'transparent' }}
           >
             {[...Array(GENKOU_ROWS)].map((_, r) => (
@@ -347,7 +384,7 @@ const App: React.FC = () => {
                 const y = r * 30;
                 return (
                   <rect
-                    key={`cell-${r}-${c}`}
+                    key={'cell-' + r + '-' + c}
                     x={x}
                     y={y}
                     width={30}
@@ -367,7 +404,7 @@ const App: React.FC = () => {
                   col.map((ch, r) =>
                     ch ? (
                       <text
-                        key={`preview-t${c}-${r}`}
+                        key={'preview-t' + c + '-' + r}
                         x={c * (30 + 6) + 15}
                         y={r * 30 + 20}
                         fontSize={20}
@@ -387,7 +424,7 @@ const App: React.FC = () => {
                 )}
                 {previewData.previewKuten.map(({ col, row, char }, idx) => (
                   <text
-                    key={`preview-kuten-${col}-${row}-${idx}`}
+                    key={'preview-kuten-' + col + '-' + row + '-' + idx}
                     x={getKutenPosition(col, row).x}
                     y={getKutenPosition(col, row).y}
                     fontSize={16}
@@ -410,7 +447,7 @@ const App: React.FC = () => {
               col.map((ch, r) =>
                 ch ? (
                   <text
-                    key={`t${c}-${r}`}
+                    key={'t' + c + '-' + r}
                     x={c * (30 + 6) + 15}
                     y={r * 30 + 20}
                     fontSize={20}
@@ -430,7 +467,7 @@ const App: React.FC = () => {
             
             {kutenMap.map(({ col, row, char }, idx) => (
               <text
-                key={`kuten-${col}-${row}-${idx}`}
+                key={'kuten-' + col + '-' + row + '-' + idx}
                 x={getKutenPosition(col, row).x}
                 y={getKutenPosition(col, row).y}
                 fontSize={16}

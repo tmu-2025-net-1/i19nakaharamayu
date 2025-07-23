@@ -435,7 +435,6 @@ const App: React.FC = () => {
     if (!hoveredText) return null;
     return getPreviewData(hoveredText);
   }, [hoveredText, getPreviewData]);
-
   const handleMouseEnter = useCallback((text: FloatingText) => {
     if (!text.visible || text.selected) return;
     setHoveredText(text);
@@ -574,6 +573,8 @@ const App: React.FC = () => {
             color: '#5a4a3a',
             fontFamily: 'monospace',
             zIndex: 10,
+            writingMode: 'horizontal-tb',
+            textOrientation: 'mixed',
           }}>
             15×15
           </div>

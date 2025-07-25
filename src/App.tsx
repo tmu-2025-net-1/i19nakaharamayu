@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import './App.css';
-
-const TEXT_CANDIDATES = [
-  '彼は一度も私と目を合わせようとしない。',
-  '右往左往にさまよう瞳すら見られない。',
-  'ただの背中は一体何を私に教えてくれるのだろうか。',
-  'ただだるそうに棒アイスを口に咥えながらスマホを眺めてた。',
-  'ねぇ。何したらこっち見てくれる？',
-];
+import { textSetsData, TextSet } from './textSets';
 
 const GENKOU_ROWS = 15;
 const GENKOU_COLS = 15;
@@ -39,6 +32,10 @@ function getKutenPosition(col: number, row: number) {
 }
 
 const App: React.FC = () => {
+  // Text set management
+  const [currentTextSet, setCurrentTextSet] = useState<TextSet>(textSetsData.textSets[0]);
+  const [textSets] = useState<TextSet[]>(textSetsData.textSets);
+  
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [selectedTextIds, setSelectedTextIds] = useState<Set<string>>(new Set());
   const [genkou, setGenkou] = useState<string[][]>(
@@ -49,6 +46,11 @@ const App: React.FC = () => {
   const [hoveredText, setHoveredText] = useState<FloatingText | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+
+  // ページタイトルを設定
+  useEffect(() => {
+    document.title = '筆跡';
+  }, []);
 
   useEffect(() => {
     const updateSize = () => {
@@ -73,7 +75,7 @@ const App: React.FC = () => {
       if (!isActive) return;
       
       setFloatingTexts((prev) => {
-        const available = TEXT_CANDIDATES.filter(t => !selectedTextIds.has(t));
+        const available = currentTextSet.texts.filter(t => !selectedTextIds.has(t));
         if (available.length === 0) return prev;
         
         // 現在表示中のテキストを除外
@@ -85,7 +87,8 @@ const App: React.FC = () => {
         const text = candidates[getRandomInt(0, candidates.length - 1)];
         
         const estimatedTextHeight = text.length * fontSize * 0.8;
-        const availableHeight = containerSize.height - 80 - 60;
+        // パディングを考慮した利用可能高さ（上部200px + 下部40px = 240px）
+        const availableHeight = containerSize.height - 240;
         
         const lines: string[] = [];
         if (estimatedTextHeight <= availableHeight) {
@@ -100,8 +103,10 @@ const App: React.FC = () => {
         const textWidth = lines.length * fontSize * 1.2;
         const textHeight = text.length * fontSize;
         const minX = 60;
-        const maxX = Math.max(120, containerSize.width - textWidth - 120);
-        const minY = 80;
+        // 右側のボタンエリア（約250px）を避けるため、maxXをより制限的に設定
+        const buttonAreaWidth = 250; // ボタンエリアの幅
+        const maxX = Math.max(120, containerSize.width - textWidth - buttonAreaWidth);
+        const minY = 200; // 上部のボタンエリアも避ける
         const maxY = Math.max(minY + 100, containerSize.height - textHeight - 60);
         
         let x = 0, y = 0, tryCount = 0, overlap = false;
@@ -111,7 +116,8 @@ const App: React.FC = () => {
           overlap = prev.some(ft => {
             if (ft.selected || !ft.visible) return false;
             const ftEstimatedHeight = ft.text.length * ft.fontSize * 0.8;
-            const ftAvailableHeight = containerSize.height - 80 - 60;
+            // パディングを考慮した利用可能高さ
+            const ftAvailableHeight = containerSize.height - 240;
             const ftLines: string[] = [];
             if (ftEstimatedHeight <= ftAvailableHeight) {
               ftLines.push(ft.text);
@@ -446,9 +452,55 @@ const App: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', width: '100vw', position: 'relative', overflow: 'auto' }}>
+      {/* テキストセット選択 */}
+      <div 
+        style={{ 
+          position: 'fixed', 
+          top: 24, 
+          right: 32, 
+          zIndex: 100,
+          backgroundColor: '#fff3e0',
+          border: '2px solid #a85c2c',
+          borderRadius: '8px',
+          padding: '12px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          minWidth: '200px'
+        }}
+      >
+        <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6b5b4f', fontWeight: 'bold' }}>
+          文章セット
+        </div>
+        <select
+          value={currentTextSet.id}
+          onChange={(e) => {
+            const selectedSet = textSets.find(set => set.id === e.target.value);
+            if (selectedSet) {
+              setCurrentTextSet(selectedSet);
+              // テキストセットが変更されたときは全体をリセット
+              handleReset();
+            }
+          }}
+          style={{
+            width: '100%',
+            padding: '6px 8px',
+            borderRadius: '4px',
+            border: '1px solid #a85c2c',
+            backgroundColor: 'white',
+            fontSize: '12px',
+            color: '#3b2c1a'
+          }}
+        >
+          {textSets.map(set => (
+            <option key={set.id} value={set.id}>
+              {set.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      
       <button 
         className="taisho-btn taisho-reset" 
-        style={{ position: 'fixed', top: 24, right: 32, zIndex: 100 }} 
+        style={{ position: 'fixed', top: 106, right: 32, zIndex: 100 }} 
         onClick={handleReset}
       >
         リセット
@@ -458,7 +510,7 @@ const App: React.FC = () => {
         className="taisho-btn" 
         style={{ 
           position: 'fixed', 
-          top: 80, 
+          top: 160, 
           right: 32, 
           zIndex: 100,
           backgroundColor: '#a85c2c',
@@ -520,6 +572,27 @@ const App: React.FC = () => {
           このサイトについて
         </button>
       </Link>
+
+      {/* 現在のセット情報表示 */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          backgroundColor: '#fff3e0',
+          border: '2px solid #a85c2c',
+          borderRadius: '8px',
+          padding: '8px 16px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          textAlign: 'center'
+        }}
+      >
+        <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#3b2c1a' }}>
+          {currentTextSet.title}
+        </div>
+      </div>
       
       <div style={{ 
         display: 'flex', 
@@ -704,8 +777,8 @@ const App: React.FC = () => {
             minHeight: 400, 
             overflow: 'visible', 
             background: 'none', 
-            paddingTop: '80px', 
-            paddingRight: '20px', 
+            paddingTop: '200px', // 上部のボタンエリアを避ける
+            paddingRight: '250px', // 右側のボタンエリアを避ける
             paddingBottom: '40px', 
             paddingLeft: '20px',
             flexGrow: 1
@@ -714,7 +787,8 @@ const App: React.FC = () => {
           {floatingTexts.filter(t => !t.selected && t.visible).map((t) => {
             const fontSize = t.fontSize;
             const estimatedTextHeight = t.text.length * fontSize * 0.8;
-            const availableHeight = containerSize.height - 80 - 60;
+            // パディングを考慮した利用可能高さ
+            const availableHeight = containerSize.height - 240;
             
             const lines: string[] = [];
             if (estimatedTextHeight <= availableHeight) {

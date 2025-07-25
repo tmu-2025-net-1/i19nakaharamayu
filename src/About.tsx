@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const About: React.FC = () => {
+  useEffect(() => {
+    document.title = 'このサイトについて - 筆跡';
+  }, []);
+
   return (
     <div style={{ 
       minHeight: '100vh', 

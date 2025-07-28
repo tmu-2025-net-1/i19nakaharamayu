@@ -28,7 +28,15 @@ function isKutenOrTouten(ch: string) {
 function getKutenPosition(col: number, row: number) {
   const cellSize = 30;
   const colSpacing = 6;
-  return { x: col * (cellSize + colSpacing) + cellSize - 5, y: row * cellSize + 8 };
+  // ブラウザ間の互換性を向上させるため、より正確な位置計算
+  const baseX = col * (cellSize + colSpacing);
+  const baseY = row * cellSize;
+  
+  // 縦書き時の句読点位置をマスの右上により配置（更に微調整）
+  return { 
+    x: baseX + (cellSize * 0.85),  // セルの右側85%の位置（より右寄り）
+    y: baseY + (cellSize * 0.15)   // セルの上側15%の位置（より上寄り）
+  };
 }
 
 const App: React.FC = () => {
@@ -129,7 +137,7 @@ const App: React.FC = () => {
             }
             const ftTextWidth = ftLines.length * ft.fontSize * 1.2;
             const ftTextHeight = ft.text.length * ft.fontSize;
-            const margin = 40; // マージンを大きく
+            const margin = 60; // Firefoxでの重複を防ぐためマージンを大きく
             return (
               x < ft.x + ftTextWidth + margin &&
               x + textWidth + margin > ft.x &&
@@ -138,7 +146,7 @@ const App: React.FC = () => {
             );
           });
           tryCount++;
-        } while (overlap && tryCount < 200); // 試行回数を増加
+        } while (overlap && tryCount < 300); // 試行回数をさらに増加
         
         const lifetime = getRandomInt(3000, 4000); // 少し長めに
         const newId = idRef.current++;
@@ -378,10 +386,13 @@ const App: React.FC = () => {
       });
 
       // 句読点を描画
-      ctx.font = '16px "Yu Mincho", serif';
+      ctx.font = '14px "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       kutenMap.forEach(({ col, row, char }) => {
-        const x = padding + col * (30 + 6) + 30 - 5;
-        const y = padding + row * 30 + 8;
+        const pos = getKutenPosition(col, row);
+        const x = padding + pos.x;
+        const y = padding + pos.y;
         ctx.fillText(char, x, y);
       });
 
@@ -500,8 +511,32 @@ const App: React.FC = () => {
       
       <button 
         className="taisho-btn taisho-reset" 
-        style={{ position: 'fixed', top: 106, right: 32, zIndex: 100 }} 
+        style={{ 
+          position: 'fixed', 
+          top: '116px',  // 完全に均等な間隔のために調整
+          right: '32px', 
+          zIndex: 100,
+          backgroundColor: '#fff3e0',  // 元の色に戻す
+          color: '#d13c2f',            // 元の色に戻す
+          border: '2px solid #d13c2f', // 元の色に戻す
+          borderRadius: '8px',
+          padding: '8px 16px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          transition: 'all 0.2s ease',
+          marginBottom: '12px'  // ボタン間の余白を均等に調整
+        }} 
         onClick={handleReset}
+        onMouseOver={(e) => {
+          e.currentTarget.style.backgroundColor = '#d13c2f';
+          e.currentTarget.style.color = '#fff3e0';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.backgroundColor = '#fff3e0';
+          e.currentTarget.style.color = '#d13c2f';
+        }}
       >
         リセット
       </button>
@@ -510,8 +545,8 @@ const App: React.FC = () => {
         className="taisho-btn" 
         style={{ 
           position: 'fixed', 
-          top: 160, 
-          right: 32, 
+          top: '174px',  // 完全に均等な間隔（58px間隔）
+          right: '32px', 
           zIndex: 100,
           backgroundColor: '#a85c2c',
           color: 'white',
@@ -690,12 +725,14 @@ const App: React.FC = () => {
                         y={r * 30 + 20}
                         fontSize={20}
                         textAnchor="middle"
+                        dominantBaseline="central"
                         fill="#a85c2c"
                         opacity="0.3"
                         style={{ 
-                          fontFamily: 'Yu Mincho, serif', 
+                          fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif',
                           writingMode: 'vertical-rl', 
-                          textOrientation: 'upright' 
+                          textOrientation: 'upright',
+                          userSelect: 'none'
                         }}
                       >
                         {ch}
@@ -708,14 +745,15 @@ const App: React.FC = () => {
                     key={'preview-kuten-' + col + '-' + row + '-' + idx}
                     x={getKutenPosition(col, row).x}
                     y={getKutenPosition(col, row).y}
-                    fontSize={16}
+                    fontSize={14}
                     textAnchor="middle"
+                    dominantBaseline="central"
                     fill="#a85c2c"
                     opacity="0.3"
                     style={{ 
-                      fontFamily: 'Yu Mincho, serif', 
-                      writingMode: 'vertical-rl', 
-                      textOrientation: 'upright' 
+                      fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif',
+                      writingMode: 'horizontal-tb',
+                      textOrientation: 'mixed'
                     }}
                   >
                     {char}
@@ -733,11 +771,13 @@ const App: React.FC = () => {
                     y={r * 30 + 20}
                     fontSize={20}
                     textAnchor="middle"
+                    dominantBaseline="central"
                     fill="#3b2c1a"
                     style={{ 
-                      fontFamily: 'Yu Mincho, serif', 
+                      fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif',
                       writingMode: 'vertical-rl', 
-                      textOrientation: 'upright' 
+                      textOrientation: 'upright',
+                      userSelect: 'none'
                     }}
                   >
                     {ch}
@@ -751,13 +791,14 @@ const App: React.FC = () => {
                 key={'kuten-' + col + '-' + row + '-' + idx}
                 x={getKutenPosition(col, row).x}
                 y={getKutenPosition(col, row).y}
-                fontSize={16}
+                fontSize={14}  // サイズを少し小さく
                 textAnchor="middle"
+                dominantBaseline="central"  // ブラウザ間でのベースライン統一
                 fill="#3b2c1a"
                 style={{ 
-                  fontFamily: 'Yu Mincho, serif', 
-                  writingMode: 'vertical-rl', 
-                  textOrientation: 'upright' 
+                  fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif',
+                  writingMode: 'horizontal-tb',  // 句読点は横書きモードで統一
+                  textOrientation: 'mixed'
                 }}
               >
                 {char}

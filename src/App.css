@@ -47,11 +47,28 @@
   align-items: flex-start !important; /* 描画開始位置から揃え */
   justify-content: flex-start !important; /* 描画開始位置から揃え */
   text-align: left !important; /* 継承されるtext-alignを上書き */
+  /* Firefox対応 */
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* レイアウト安定化 */
+  box-sizing: border-box;
+  width: max-content;
+  white-space: pre;
+  line-height: 1.2;
 }
 
 .taisho-floating-text span {
   text-align: left !important; /* 子要素のspanにも適用 */
   align-self: flex-start !important;
+  display: block !important;
+  width: 100% !important;
+  /* Firefox対応 */
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* 固定配置ボタン用の強制スタイル */

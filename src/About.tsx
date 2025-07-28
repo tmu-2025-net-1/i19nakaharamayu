@@ -109,6 +109,7 @@ const About: React.FC = () => {
             <li style={{ marginBottom: '8px' }}>文字が原稿用紙に自動的に配置されます</li>
             <li style={{ marginBottom: '8px' }}>ホバーすると配置位置をプレビューできます</li>
             <li style={{ marginBottom: '8px' }}>「リセット」ボタンで初期状態に戻せます</li>
+            <li style={{ marginBottom: '8px' }}>「画像保存」ボタンで，文章を書いた原稿用紙をダウンロードできます</li>
           </ol>
 
         

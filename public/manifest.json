@@ -2,32 +2,24 @@
   "name": "筆跡",
   "short_name": "筆跡",
   "description": "浮遊する文章をクリックして美しい原稿用紙に配置できるWebアプリケーション",
-  "start_url": "/i19nakaharamayu/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f5f0e8",
   "theme_color": "#8b7355",
   "orientation": "landscape-primary",
   "categories": ["productivity", "education", "utilities"],
   "lang": "ja",
-  "scope": "/i19nakaharamayu/",
+  "scope": ".",
   "icons": [
     {
-      "src": "favicon.svg",
-      "sizes": "32x32",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
-      "src": "icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ]
 }

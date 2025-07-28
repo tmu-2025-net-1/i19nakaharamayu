@@ -391,7 +391,7 @@ const App: React.FC = () => {
           const downloadUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = downloadUrl;
-          link.download = `原稿用紙_${new Date().toISOString().slice(0, 10)}.png`;
+          link.download = `原稿_${new Date().toISOString().slice(0, 10)}.png`;
           link.style.display = 'none';
           document.body.appendChild(link);
           link.click();

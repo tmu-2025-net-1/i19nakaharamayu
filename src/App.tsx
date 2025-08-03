@@ -28,7 +28,6 @@ function isKutenOrTouten(ch: string) {
 function getKutenPosition(col: number, row: number) {
   const cellSize = 30;
   const colSpacing = 6;
-  // ブラウザ間の互換性を向上させるため、より正確な位置計算
   const baseX = col * (cellSize + colSpacing);
   const baseY = row * cellSize;
   
@@ -54,6 +53,7 @@ const App: React.FC = () => {
   const [hoveredText, setHoveredText] = useState<FloatingText | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // ページタイトルを設定
   useEffect(() => {
@@ -73,6 +73,21 @@ const App: React.FC = () => {
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
+
+  // ドロップダウンを外側クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isDropdownOpen) {
+        const target = event.target as Element;
+        if (!target.closest('[data-dropdown]')) {
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     let idRef = { current: 0 };
@@ -95,8 +110,8 @@ const App: React.FC = () => {
         const text = candidates[getRandomInt(0, candidates.length - 1)];
         
         const estimatedTextHeight = text.length * fontSize * 0.8;
-        // パディングを考慮した利用可能高さ（上部200px + 下部40px = 240px）
-        const availableHeight = containerSize.height - 240;
+        // パディングを考慮した利用可能高さ（上部80px + 下部40px = 120px）
+        const availableHeight = containerSize.height - 120;
         
         const lines: string[] = [];
         if (estimatedTextHeight <= availableHeight) {
@@ -111,10 +126,10 @@ const App: React.FC = () => {
         const textWidth = lines.length * fontSize * 1.2;
         const textHeight = text.length * fontSize;
         const minX = 60;
-        // 右側のボタンエリア（約250px）を避けるため、maxXをより制限的に設定
-        const buttonAreaWidth = 250; // ボタンエリアの幅
+        // 右側のドロップダウンエリア（約280px）を避ける
+        const buttonAreaWidth = 280; 
         const maxX = Math.max(120, containerSize.width - textWidth - buttonAreaWidth);
-        const minY = 200; // 上部のボタンエリアも避ける
+        const minY = 80; // 上部のボタンエリアを避ける
         const maxY = Math.max(minY + 100, containerSize.height - textHeight - 60);
         
         let x = 0, y = 0, tryCount = 0, overlap = false;
@@ -125,7 +140,7 @@ const App: React.FC = () => {
             if (ft.selected || !ft.visible) return false;
             const ftEstimatedHeight = ft.text.length * ft.fontSize * 0.8;
             // パディングを考慮した利用可能高さ
-            const ftAvailableHeight = containerSize.height - 240;
+            const ftAvailableHeight = containerSize.height - 120;
             const ftLines: string[] = [];
             if (ftEstimatedHeight <= ftAvailableHeight) {
               ftLines.push(ft.text);
@@ -461,125 +476,166 @@ const App: React.FC = () => {
     setHoveredText(null);
   }, []);
 
+  // ドロップダウンを外側クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isDropdownOpen) {
+        const target = event.target as Element;
+        if (!target.closest('[data-dropdown]')) {
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDropdownOpen]);
+
   return (
     <div style={{ minHeight: '100vh', width: '100vw', position: 'relative', overflow: 'auto' }}>
-      {/* テキストセット選択 */}
+      {/* テキストセット選択 - カスタムドロップダウン */}
       <div 
         style={{ 
           position: 'fixed', 
-          top: 24, 
+          top: 24, // 上部に戻す
           right: 32, 
           zIndex: 100,
-          backgroundColor: '#fff3e0',
-          border: '2px solid #a85c2c',
-          borderRadius: '8px',
-          padding: '12px',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          minWidth: '200px'
+          backgroundColor: '#f5f0e8',
+          border: '2px solid #8b7355',
+          borderRadius: '12px',
+          padding: '16px',
+          boxShadow: '0 4px 12px rgba(139, 115, 85, 0.15)',
+          minWidth: '220px',
+          fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", serif'
         }}
       >
-        <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6b5b4f', fontWeight: 'bold' }}>
-          文章セット
+        <div style={{ 
+          marginBottom: '12px', 
+          fontSize: '13px', 
+          color: '#5a4a3a', 
+          fontWeight: 'bold',
+          letterSpacing: '0.5px'
+        }}>
+          📜 文章セット
         </div>
-        <select
-          value={currentTextSet.id}
-          onChange={(e) => {
-            const selectedSet = textSets.find(set => set.id === e.target.value);
-            if (selectedSet) {
-              setCurrentTextSet(selectedSet);
-              // テキストセットが変更されたときは全体をリセット
-              handleReset();
-            }
-          }}
-          style={{
-            width: '100%',
-            padding: '6px 8px',
-            borderRadius: '4px',
-            border: '1px solid #a85c2c',
-            backgroundColor: 'white',
-            fontSize: '12px',
-            color: '#3b2c1a'
-          }}
-        >
-          {textSets.map(set => (
-            <option key={set.id} value={set.id}>
-              {set.title}
-            </option>
-          ))}
-        </select>
+        
+        <div style={{ position: 'relative' }} data-dropdown>
+          {/* カスタムセレクトボタン */}
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '2px solid #a85c2c',
+              backgroundColor: 'white',
+              fontSize: '13px',
+              color: '#3b2c1a',
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(168, 92, 44, 0.1)',
+              fontFamily: 'inherit',
+              fontWeight: '500'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#fff3e0';
+              e.currentTarget.style.borderColor = '#8b4513';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
+              e.currentTarget.style.borderColor = '#a85c2c';
+            }}
+          >
+            <span>{currentTextSet.title}</span>
+            <span style={{ 
+              fontSize: '12px', 
+              transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease'
+            }}>
+              ▼
+            </span>
+          </button>
+          
+          {/* ドロップダウンメニュー */}
+          {isDropdownOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: '4px',
+                backgroundColor: 'white',
+                border: '2px solid #a85c2c',
+                borderRadius: '8px',
+                boxShadow: '0 6px 20px rgba(139, 115, 85, 0.2)',
+                overflow: 'hidden',
+                zIndex: 1000
+              }}
+            >
+              {textSets.map((set, index) => (
+                <button
+                  key={set.id}
+                  onClick={() => {
+                    setCurrentTextSet(set);
+                    setIsDropdownOpen(false);
+                    handleReset();
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    backgroundColor: currentTextSet.id === set.id ? '#fff3e0' : 'white',
+                    color: currentTextSet.id === set.id ? '#8b4513' : '#3b2c1a',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s ease',
+                    borderBottom: index < textSets.length - 1 ? '1px solid #f0e6d6' : 'none',
+                    fontFamily: 'inherit',
+                    fontWeight: currentTextSet.id === set.id ? 'bold' : 'normal'
+                  }}
+                  onMouseOver={(e) => {
+                    if (currentTextSet.id !== set.id) {
+                      e.currentTarget.style.backgroundColor = '#f9f5f0';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (currentTextSet.id !== set.id) {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }
+                  }}
+                >
+                  {set.title}
+                  {currentTextSet.id === set.id && (
+                    <span style={{ 
+                      marginLeft: '8px', 
+                      color: '#a85c2c',
+                      fontSize: '11px'
+                    }}>
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       
-      <button 
-        className="taisho-btn taisho-reset" 
-        style={{ 
-          position: 'fixed', 
-          top: '116px',  // 完全に均等な間隔のために調整
-          right: '32px', 
-          zIndex: 100,
-          backgroundColor: '#fff3e0',  // 元の色に戻す
-          color: '#d13c2f',            // 元の色に戻す
-          border: '2px solid #d13c2f', // 元の色に戻す
-          borderRadius: '8px',
-          padding: '8px 16px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          transition: 'all 0.2s ease',
-          marginBottom: '12px'  // ボタン間の余白を均等に調整
-        }} 
-        onClick={handleReset}
-        onMouseOver={(e) => {
-          e.currentTarget.style.backgroundColor = '#d13c2f';
-          e.currentTarget.style.color = '#fff3e0';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.backgroundColor = '#fff3e0';
-          e.currentTarget.style.color = '#d13c2f';
-        }}
-      >
-        リセット
-      </button>
-      
-      <button 
-        className="taisho-btn" 
-        style={{ 
-          position: 'fixed', 
-          top: '174px',  // 完全に均等な間隔（58px間隔）
-          right: '32px', 
-          zIndex: 100,
-          backgroundColor: '#a85c2c',
-          color: 'white',
-          border: '2px solid #8b4513',
-          borderRadius: '8px',
-          padding: '8px 16px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          transition: 'all 0.2s ease'
-        }} 
-        onClick={handleDownloadImage}
-        onMouseOver={(e) => {
-          e.currentTarget.style.backgroundColor = '#8b4513';
-          e.currentTarget.style.transform = 'translateY(-1px)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.backgroundColor = '#a85c2c';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}
-      >
-        画像保存
-      </button>
-      
+      {/* 左側のボタン - 「このサイトについて」 */}
       <Link 
         to="/about"
         style={{ 
-          position: 'fixed', 
-          top: 24, 
-          left: 32, 
+          position: 'fixed',
+          top: 24,
+          left: 32,
           zIndex: 100,
-          textDecoration: 'none'
+          textDecoration: 'none',
+          display: 'block'
         }}
       >
         <button 
@@ -588,43 +644,132 @@ const App: React.FC = () => {
             color: 'white',
             border: '2px solid #6b5b4f',
             borderRadius: '8px',
-            padding: '8px 16px',
+            padding: '10px 18px',
             fontSize: '14px',
             fontWeight: 'bold',
             cursor: 'pointer',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            whiteSpace: 'nowrap',
+            minWidth: 'auto'
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.backgroundColor = '#6b5b4f';
             e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
           }}
           onMouseOut={(e) => {
             e.currentTarget.style.backgroundColor = '#8b7355';
             e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
           }}
         >
           このサイトについて
         </button>
       </Link>
 
+      {/* 中央左のボタン - 「リセット」 */}
+      <button 
+        className="taisho-btn taisho-reset-button" 
+        style={{ 
+          position: 'fixed',
+          top: 24,
+          left: 240, // 「このサイトについて」ボタンの右側、少し余裕を持たせて
+          zIndex: 100,
+          backgroundColor: '#fff3e0',
+          color: '#d13c2f',
+          border: '2px solid #d13c2f',
+          borderRadius: '8px',
+          padding: '10px 18px', // 画像保存ボタンと同じパディング
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          transition: 'all 0.2s ease',
+          whiteSpace: 'nowrap',
+          minWidth: 'auto',
+          maxWidth: '100px', // 最大幅を制限
+          width: 'auto'
+        }} 
+        onClick={handleReset}
+        onMouseOver={(e) => {
+          e.currentTarget.style.backgroundColor = '#d13c2f';
+          e.currentTarget.style.color = '#fff3e0';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(209, 60, 47, 0.2)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.backgroundColor = '#fff3e0';
+          e.currentTarget.style.color = '#d13c2f';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+        }}
+      >
+        リセット
+      </button>
+
+      {/* 右側のボタン - 「画像保存」 */}
+      <button 
+        className="taisho-btn" 
+        style={{ 
+          position: 'fixed',
+          top: 24,
+          left: 360, // リセットボタンの右隣に配置
+          zIndex: 100,
+          backgroundColor: '#a85c2c',
+          color: 'white',
+          border: '2px solid #8b4513',
+          borderRadius: '8px',
+          padding: '10px 18px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          transition: 'all 0.2s ease',
+          whiteSpace: 'nowrap',
+          minWidth: 'auto'
+        }} 
+        onClick={handleDownloadImage}
+        onMouseOver={(e) => {
+          e.currentTarget.style.backgroundColor = '#8b4513';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(139, 69, 19, 0.2)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.backgroundColor = '#a85c2c';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+        }}
+      >
+        画像保存
+      </button>
+
       {/* 現在のセット情報表示 */}
       <div
         style={{
           position: 'fixed',
-          top: 24,
+          top: 26, // ボタンと高さを合わせる
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 100,
+          zIndex: 98, // ボタンより低いz-index
           backgroundColor: '#fff3e0',
           border: '2px solid #a85c2c',
           borderRadius: '8px',
-          padding: '8px 16px',
+          padding: '10px 20px', // パディングを調整
           boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          textAlign: 'center'
+          textAlign: 'center',
+          maxWidth: '300px', // 最大幅を設定
+          whiteSpace: 'nowrap', // テキストが折り返されないようにする
+          overflow: 'hidden',
+          textOverflow: 'ellipsis' // 長いテキストは省略記号で表示
         }}
       >
-        <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#3b2c1a' }}>
+        <div style={{ 
+          fontSize: '15px', 
+          fontWeight: 'bold', 
+          color: '#3b2c1a',
+          fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", serif'
+        }}>
           {currentTextSet.title}
         </div>
       </div>
@@ -818,8 +963,8 @@ const App: React.FC = () => {
             minHeight: 400, 
             overflow: 'visible', 
             background: 'none', 
-            paddingTop: '200px', // 上部のボタンエリアを避ける
-            paddingRight: '250px', // 右側のボタンエリアを避ける
+            paddingTop: '80px', // 上部のボタンエリアを調整
+            paddingRight: '280px', // 右側のドロップダウンエリアを避ける
             paddingBottom: '40px', 
             paddingLeft: '20px',
             flexGrow: 1
@@ -829,7 +974,7 @@ const App: React.FC = () => {
             const fontSize = t.fontSize;
             const estimatedTextHeight = t.text.length * fontSize * 0.8;
             // パディングを考慮した利用可能高さ
-            const availableHeight = containerSize.height - 240;
+            const availableHeight = containerSize.height - 120;
             
             const lines: string[] = [];
             if (estimatedTextHeight <= availableHeight) {

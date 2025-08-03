@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- 背景 -->
+  <rect width="192" height="192" fill="#f5f0e8" stroke="#8b7355" stroke-width="4" rx="12"/>
+  
+  <!-- 原稿用紙のマス目 -->
+  <g stroke="#a85c2c" stroke-width="2" opacity="0.7">
+    <!-- 縦線 -->
+    <line x1="48" y1="24" x2="48" y2="168"/>
+    <line x1="72" y1="24" x2="72" y2="168"/>
+    <line x1="96" y1="24" x2="96" y2="168"/>
+    <line x1="120" y1="24" x2="120" y2="168"/>
+    <line x1="144" y1="24" x2="144" y2="168"/>
+    
+    <!-- 横線 -->
+    <line x1="24" y1="48" x2="168" y2="48"/>
+    <line x1="24" y1="72" x2="168" y2="72"/>
+    <line x1="24" y1="96" x2="168" y2="96"/>
+    <line x1="24" y1="120" x2="168" y2="120"/>
+    <line x1="24" y1="144" x2="168" y2="144"/>
+  </g>
+  
+  <!-- 文字 "筆" -->
+  <text x="96" y="105" font-family="serif" font-size="48" fill="#3b2c1a" text-anchor="middle" dominant-baseline="central">筆</text>
+  
+  <!-- 左上の装飾 -->
+  <rect x="12" y="12" width="16" height="10" fill="#8b7355" rx="2"/>
+  
+  <!-- 右下の小さな文字 -->
+  <text x="180" y="180" font-family="monospace" font-size="8" fill="#5a4a3a" text-anchor="end">15×15</text>
+</svg>
